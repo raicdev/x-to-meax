@@ -1,0 +1,72 @@
+function readBoolean(name, defaultValue) {
+  const raw = process.env[name];
+  if (raw == null || raw === "") return defaultValue;
+  return ["1", "true", "yes", "on"].includes(raw.toLowerCase());
+}
+
+function readInteger(name, defaultValue, { min, max } = {}) {
+  const raw = process.env[name];
+  if (raw == null || raw === "") return defaultValue;
+
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isFinite(value)) {
+    throw new Error(`${name} must be an integer.`);
+  }
+  if (min != null && value < min) {
+    throw new Error(`${name} must be >= ${min}.`);
+  }
+  if (max != null && value > max) {
+    throw new Error(`${name} must be <= ${max}.`);
+  }
+  return value;
+}
+
+export function loadConfig() {
+  const xUsername = process.env.X_USERNAME?.replace(/^@+/, "");
+  const config = {
+    xUsername,
+    nitterBaseUrl: process.env.NITTER_BASE_URL || "https://nitter.net",
+    nitterRssUrl: process.env.NITTER_RSS_URL,
+    rssUserAgent: process.env.RSS_USER_AGENT || "x-to-meax/0.1.0",
+    rssExtraHeaders: readJsonObject("RSS_REQUEST_HEADERS_JSON", {}),
+    meaxBearerToken: process.env.MEAX_BEARER_TOKEN,
+    meaxPostsUrl: process.env.MEAX_POSTS_URL || "https://api.meax.jp/api/posts",
+    pollIntervalMs:
+      readInteger("POLL_INTERVAL_SECONDS", 300, { min: 30 }) * 1000,
+    forwardReplies: readBoolean("FORWARD_REPLIES", false),
+    includePostLink: readBoolean("INCLUDE_POST_LINK", false),
+    backfillOnStart: readBoolean("BACKFILL_ON_START", false),
+    stateFile: process.env.STATE_FILE || "data/state.json",
+  };
+
+  const missing = [];
+  if (!config.xUsername && !config.nitterRssUrl)
+    missing.push("X_USERNAME or NITTER_RSS_URL");
+  if (!config.meaxBearerToken) missing.push("MEAX_BEARER_TOKEN");
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missing.join(", ")}`,
+    );
+  }
+
+  return config;
+}
+
+function readJsonObject(name, defaultValue) {
+  const raw = process.env[name];
+  if (raw == null || raw === "") return defaultValue;
+
+  let value;
+  try {
+    value = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`${name} must be a JSON object.`);
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${name} must be a JSON object.`);
+  }
+
+  return value;
+}
