@@ -5,6 +5,10 @@ import { NitterHtmlClient } from "./nitterHtmlClient.js";
 import { NitterRssClient } from "./nitterRssClient.js";
 
 const once = process.argv.includes("--once");
+const dryRun = process.argv.includes("--dry-run");
+if (dryRun) {
+  process.env.DRY_RUN = "true";
+}
 
 async function main() {
   const config = loadConfig();
@@ -31,6 +35,9 @@ async function main() {
 
   if (!once) {
     console.log(`Polling every ${Math.round(config.pollIntervalMs / 1000)} seconds.`);
+    if (config.dryRun) {
+      console.log("Dry run enabled. Meax posts and state updates are disabled.");
+    }
     setInterval(tick, config.pollIntervalMs);
   }
 }

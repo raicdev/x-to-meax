@@ -88,6 +88,12 @@ bun run start
 
 止めるときはターミナルで `Ctrl+C` を押します。
 
+Meaxへ投稿せず、stateも更新せずに検出結果だけ確認したい場合は dry-run を使います。
+
+```powershell
+bun run dry-run
+```
+
 ## よく変える設定
 
 `.env` で変更できます。
@@ -113,6 +119,9 @@ RSS_REQUEST_HEADERS_JSON=
 
 # 初回起動時からRSS内の投稿を転送する
 BACKFILL_ON_START=false
+
+# Meaxへ投稿せず、stateも更新せずに確認する
+DRY_RUN=false
 ```
 
 普通は `BACKFILL_ON_START=false` と `FORWARD_REPLIES=false` のままで使うのがおすすめです。`BACKFILL_ON_START=true` にすると、初回取得できた投稿もMeaxへ転送します。
@@ -177,7 +186,7 @@ Nitter取得時は次のヘッダーを送ります。
 
 Nitterサーバーから `ETag` や `Last-Modified` が返ってきた場合は、`data/state.json` に保存します。次回取得時に `If-None-Match` / `If-Modified-Since` として送るので、更新されていなければ `304 Not Modified` として軽く済ませられます。
 
-NitterにはX APIのような `since_id` がないため、`data/state.json` に既読投稿も保存して、同じ投稿を何度もMeaxへ送らないようにしています。
+NitterにはX APIのような `since_id` がないため、`data/state.json` に既読投稿も保存して、同じ投稿を何度もMeaxへ送らないようにしています。既読キー内の投稿URLは `https://x.com/<user>/status/<id>` に正規化するので、`NITTER_BASE_URL` を変えても同じ投稿を別物として扱いません。
 
 reply判定は、本文が `@someone` のようなメンションから始まるかどうかで見ています。Nitterだけでは完全なreply情報が取れないため、先頭メンションの通常投稿もreply扱いになる可能性があります。
 

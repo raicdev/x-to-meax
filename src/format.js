@@ -20,6 +20,10 @@ export function getPostLink(post, username) {
   return convertNitterLinkToXLink(post.link) || buildPostLink(post.id, username);
 }
 
+export function buildPostKey(post, username) {
+  return getPostLink(post, username) || post.id;
+}
+
 export function convertNitterLinkToXLink(link) {
   if (!link) return null;
   const match = String(link).match(/^https?:\/\/[^/]+\/([^/?#]+)\/status(?:es)?\/(\d+)/);

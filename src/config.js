@@ -43,6 +43,7 @@ export function loadConfig() {
     forwardReplies: readBoolean("FORWARD_REPLIES", false),
     includePostLink: readBoolean("INCLUDE_POST_LINK", false),
     backfillOnStart: readBoolean("BACKFILL_ON_START", false),
+    dryRun: readBoolean("DRY_RUN", false),
     stateFile: process.env.STATE_FILE || "data/state.json",
   };
 
@@ -51,7 +52,7 @@ export function loadConfig() {
     missing.push("X_USERNAME or NITTER_RSS_URL");
   if (config.nitterSource === "html" && !config.xUsername && !config.nitterHtmlUrl)
     missing.push("X_USERNAME or NITTER_HTML_URL");
-  if (!config.meaxBearerToken) missing.push("MEAX_BEARER_TOKEN");
+  if (!config.dryRun && !config.meaxBearerToken) missing.push("MEAX_BEARER_TOKEN");
 
   if (missing.length > 0) {
     throw new Error(

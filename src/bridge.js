@@ -15,52 +15,80 @@ export class Bridge {
     const feedCache = mergeFeedCache(state.feed, feed.cache);
     const posts = feed.posts;
     const seenKeys = new Set(state.seenPostKeys || []);
-    const newPosts = posts.filter((post) => !seenKeys.has(post.key || post.id));
+    const seenIds = new Set([...seenKeys].map(extractSeenPostId).filter(Boolean));
+    const newPosts = posts.filter((post) => !hasSeenPost(post, seenKeys, seenIds));
 
     if (feed.notModified) {
+      if (this.config.dryRun) {
+        this.logger.log("Dry run: Nitter feed not modified. State not updated.");
+        return { forwarded: 0, seen: 0, dryRun: true, wouldForward: 0 };
+      }
       await saveState(this.config.stateFile, {
         ...state,
         feed: feedCache,
         initialized: true
       });
-      this.logger.log("RSS feed not modified.");
+      this.logger.log("Nitter feed not modified.");
       return { forwarded: 0, seen: 0 };
     }
 
     if (posts.length === 0) {
+      if (this.config.dryRun) {
+        this.logger.log("Dry run: no Nitter posts. State not updated.");
+        return { forwarded: 0, seen: 0, dryRun: true, wouldForward: 0 };
+      }
       await saveState(this.config.stateFile, { ...state, feed: feedCache, initialized: true });
-      this.logger.log("No RSS items.");
+      this.logger.log("No Nitter posts.");
       return { forwarded: 0, seen: 0 };
     }
 
     const newestId = maxPostId(posts.map((post) => post.id));
 
     if (!state.initialized && !this.config.backfillOnStart) {
+      if (this.config.dryRun) {
+        this.logger.log(`Dry run: would initialize state from ${posts.length} Nitter posts. State not updated.`);
+        return { forwarded: 0, seen: posts.length, dryRun: true, wouldForward: 0 };
+      }
       await saveState(this.config.stateFile, {
         lastSeenPostId: newestId,
-        seenPostKeys: compactSeenPostKeys(posts.map((post) => post.key || post.id)),
+        seenPostKeys: buildSeenPostKeys(new Set(), posts),
         feed: feedCache,
         initialized: true
       });
-      this.logger.log(`Initialized state from RSS. No posts forwarded.`);
+      this.logger.log(`Initialized state from Nitter. No posts forwarded.`);
       return { forwarded: 0, seen: posts.length };
     }
 
     if (newPosts.length === 0) {
-      await saveState(this.config.stateFile, { ...state, feed: feedCache, initialized: true });
-      this.logger.log("No new RSS items.");
+      if (this.config.dryRun) {
+        this.logger.log(`Dry run: no new Nitter posts. State not updated.`);
+        return { forwarded: 0, seen: posts.length, dryRun: true, wouldForward: 0 };
+      }
+      await saveState(this.config.stateFile, {
+        ...state,
+        lastSeenPostId: newestId,
+        seenPostKeys: buildSeenPostKeys(seenKeys, posts),
+        feed: feedCache,
+        initialized: true
+      });
+      this.logger.log("No new Nitter posts.");
       return { forwarded: 0, seen: posts.length };
     }
 
     const ordered = [...newPosts].sort(comparePosts);
     let forwarded = 0;
+    let wouldForward = 0;
 
     for (const post of ordered) {
       if (post.isReply && !this.config.forwardReplies) {
+        if (this.config.dryRun) {
+          this.logger.log(`Dry run: would skip reply X post ${post.id}.`);
+          continue;
+        }
         seenKeys.add(post.key || post.id);
         await saveState(this.config.stateFile, {
           lastSeenPostId: post.id,
-          seenPostKeys: compactSeenPostKeys([...seenKeys]),
+          seenPostKeys: buildSeenPostKeys(seenKeys),
           feed: feedCache,
           initialized: true
         });
@@ -75,13 +103,22 @@ export class Bridge {
 
       if (!content) {
         this.logger.warn(`Skipping empty X post ${post.id}.`);
+        if (this.config.dryRun) {
+          continue;
+        }
         seenKeys.add(post.key || post.id);
         await saveState(this.config.stateFile, {
           lastSeenPostId: post.id,
-          seenPostKeys: compactSeenPostKeys([...seenKeys]),
+          seenPostKeys: buildSeenPostKeys(seenKeys),
           feed: feedCache,
           initialized: true
         });
+        continue;
+      }
+
+      if (this.config.dryRun) {
+        wouldForward += 1;
+        this.logger.log(`Dry run: would forward X post ${post.id} to Meax.`);
         continue;
       }
 
@@ -90,16 +127,21 @@ export class Bridge {
       seenKeys.add(post.key || post.id);
       await saveState(this.config.stateFile, {
         lastSeenPostId: post.id,
-        seenPostKeys: compactSeenPostKeys([...seenKeys]),
+        seenPostKeys: buildSeenPostKeys(seenKeys),
         feed: feedCache,
         initialized: true
       });
       this.logger.log(`Forwarded X post ${post.id} to Meax.`);
     }
 
+    if (this.config.dryRun) {
+      this.logger.log(`Dry run complete. wouldForward=${wouldForward} seen=${posts.length}. State not updated.`);
+      return { forwarded: 0, seen: posts.length, dryRun: true, wouldForward };
+    }
+
     await saveState(this.config.stateFile, {
       lastSeenPostId: newestId,
-      seenPostKeys: compactSeenPostKeys([...seenKeys, ...posts.map((post) => post.key || post.id)]),
+      seenPostKeys: buildSeenPostKeys(seenKeys, posts),
       feed: feedCache,
       initialized: true
     });
@@ -122,6 +164,36 @@ export class Bridge {
       notModified: false
     };
   }
+}
+
+function hasSeenPost(post, seenKeys, seenIds) {
+  return seenKeys.has(post.key || post.id) || seenIds.has(post.id);
+}
+
+function extractSeenPostId(value) {
+  if (!value) return null;
+  const text = String(value);
+  const leadingId = text.match(/^\d+/);
+  if (leadingId) return leadingId[0];
+  const statusId = text.match(/\/status(?:es)?\/(\d+)/);
+  return statusId?.[1] || null;
+}
+
+function buildSeenPostKeys(seenKeys, posts = []) {
+  return compactSeenPostKeys([
+    ...[...seenKeys].map(normalizeSeenPostKey),
+    ...posts.map((post) => post.key || post.id)
+  ]);
+}
+
+function normalizeSeenPostKey(value) {
+  if (!value) return null;
+  const text = String(value);
+  const match = text.match(/https?:\/\/[^/|]+\/([^/?#|]+)\/status(?:es)?\/(\d+)/);
+  if (match) {
+    return `https://x.com/${decodeURIComponent(match[1])}/status/${match[2]}`;
+  }
+  return text;
 }
 
 function comparePosts(a, b) {

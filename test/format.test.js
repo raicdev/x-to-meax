@@ -1,7 +1,7 @@
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 
-import { buildPostLink, convertNitterLinkToXLink, formatMeaxContent } from "../src/format.js";
+import { buildPostKey, buildPostLink, convertNitterLinkToXLink, formatMeaxContent } from "../src/format.js";
 
 test("formats normal post text", () => {
   assert.equal(
@@ -45,6 +45,17 @@ test("builds generic post link without username", () => {
 test("converts nitter post links to x post links", () => {
   assert.equal(
     convertNitterLinkToXLink("https://nitter.net/Rothmus/status/2068880183663206685#m"),
+    "https://x.com/Rothmus/status/2068880183663206685"
+  );
+});
+
+test("builds stable x.com based post keys", () => {
+  assert.equal(
+    buildPostKey({
+      id: "2068880183663206685",
+      pubDate: "Mon, 22 Jun 2026 08:00:00 GMT",
+      link: "https://nt.vern.cc/Rothmus/status/2068880183663206685#m"
+    }),
     "https://x.com/Rothmus/status/2068880183663206685"
   );
 });

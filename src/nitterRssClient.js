@@ -1,5 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 
+import { buildPostKey } from "./format.js";
+
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "",
@@ -127,15 +129,18 @@ function normalizeItem(item) {
   const description = stripHtml(readText(item.description));
   const contentEncoded = stripHtml(readText(item["content:encoded"]));
 
-  return {
+  const post = {
     id,
-    key: [id, readText(item.pubDate), link].filter(Boolean).join("|"),
     title,
     text: chooseText({ title, description, contentEncoded }),
     link,
     pubDate: readText(item.pubDate),
     isReply: detectReply({ title, description, contentEncoded }),
     isRepost: detectRepost({ title, description, contentEncoded }),
+  };
+  return {
+    ...post,
+    key: buildPostKey(post),
   };
 }
 

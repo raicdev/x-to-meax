@@ -100,6 +100,89 @@ test("does not refire items already seen in rss state", async () => {
   }
 });
 
+test("does not refire items when nitter base URL changes", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "x-to-meax-"));
+  try {
+    const posted = [];
+    const stateFile = join(dir, "state.json");
+    const posts = [
+      {
+        id: "1870000000000000000",
+        key: "https://x.com/example/status/1870000000000000000",
+        text: "first"
+      }
+    ];
+    const bridge = new Bridge({
+      feedClient: {
+        getRecentPosts: async () => posts
+      },
+      meaxClient: {
+        createPost: async (post) => posted.push(post)
+      },
+      config: {
+        stateFile,
+        backfillOnStart: true,
+        includePostLink: false
+      },
+      logger: silentLogger
+    });
+
+    await Bun.write(
+      stateFile,
+      JSON.stringify({
+        initialized: true,
+        seenPostKeys: [
+          "1870000000000000000|date|https://nitter.net/example/status/1870000000000000000#m"
+        ]
+      })
+    );
+
+    const result = await bridge.runOnce();
+    const saved = JSON.parse(await Bun.file(stateFile).text());
+
+    assert.equal(result.forwarded, 0);
+    assert.deepEqual(posted, []);
+    assert.deepEqual(saved.seenPostKeys, [
+      "https://x.com/example/status/1870000000000000000"
+    ]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("dry run does not post or update state", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "x-to-meax-"));
+  try {
+    const posted = [];
+    const stateFile = join(dir, "state.json");
+    const bridge = new Bridge({
+      feedClient: {
+        getRecentPosts: async () => [
+          { id: "1870000000000000000", key: "1870000000000000000|date", text: "first" }
+        ]
+      },
+      meaxClient: {
+        createPost: async (post) => posted.push(post)
+      },
+      config: {
+        stateFile,
+        backfillOnStart: true,
+        includePostLink: false,
+        dryRun: true
+      },
+      logger: silentLogger
+    });
+
+    const result = await bridge.runOnce();
+
+    assert.deepEqual(result, { forwarded: 0, seen: 1, dryRun: true, wouldForward: 1 });
+    assert.deepEqual(posted, []);
+    await assert.rejects(() => Bun.file(stateFile).text());
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("skips replies by default and records them as seen", async () => {
   const dir = await mkdtemp(join(tmpdir(), "x-to-meax-"));
   try {

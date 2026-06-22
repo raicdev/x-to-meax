@@ -50,6 +50,10 @@ test("parses nitter html timeline items", () => {
   assert.equal(posts[0].id, "1870000000000000001");
   assert.equal(posts[0].text, "hello\nworld");
   assert.equal(posts[0].link, "https://nitter.net/example/status/1870000000000000001#m");
+  assert.equal(
+    posts[0].key,
+    "https://x.com/example/status/1870000000000000001"
+  );
   assert.equal(posts[0].pubDate, "Mon, 22 Jun 2026 08:00:00 GMT");
   assert.equal(posts[1].id, "1870000000000000002");
   assert.equal(posts[1].isRepost, true);
@@ -109,4 +113,36 @@ test("sends html headers and conditional request headers", async () => {
   assert.equal(requestHeaders["if-modified-since"], "Sun, 21 Jun 2026 08:00:00 GMT");
   assert.equal(feed.cache.etag, "\"abc\"");
   assert.equal(feed.cache.lastModified, "Mon, 22 Jun 2026 08:00:00 GMT");
+});
+
+test("rejects empty html responses", async () => {
+  const client = new NitterHtmlClient({
+    htmlUrl: "https://nitter.net/example",
+    fetchImpl: async () => ({
+      ok: true,
+      headers: new Headers(),
+      text: async () => ""
+    })
+  });
+
+  await assert.rejects(
+    () => client.getRecentFeed(),
+    /Nitter HTML response was empty/
+  );
+});
+
+test("rejects html responses without a timeline", async () => {
+  const client = new NitterHtmlClient({
+    htmlUrl: "https://nitter.net/example",
+    fetchImpl: async () => ({
+      ok: true,
+      headers: new Headers(),
+      text: async () => "<html><body>blocked</body></html>"
+    })
+  });
+
+  await assert.rejects(
+    () => client.getRecentFeed(),
+    /Nitter HTML response did not contain a timeline/
+  );
 });

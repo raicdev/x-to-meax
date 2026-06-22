@@ -7,6 +7,7 @@
   "scripts": {
     "start": "bun src/index.js",
     "once": "bun src/index.js --once",
+    "dry-run": "bun src/index.js --once --dry-run",
     "debug:rss": "bun src/debugRss.js",
     "debug:html": "bun src/debugHtml.js",
     "test": "bun test"

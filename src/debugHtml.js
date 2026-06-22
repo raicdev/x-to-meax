@@ -1,4 +1,4 @@
-import { NitterHtmlClient, parseNitterHtml } from "./nitterHtmlClient.js";
+import { NitterHtmlClient, parseNitterHtml, validateNitterHtml } from "./nitterHtmlClient.js";
 
 function readJsonObject(name) {
   const raw = process.env[name];
@@ -42,6 +42,7 @@ async function main() {
 
   const response = await fetch(url, { headers });
   const body = await response.text();
+  validateNitterHtml(body, url);
   const directPosts = parseNitterHtml(body, { sourceUrl: url });
 
   console.log(`Status: ${response.status} ${response.statusText}`);

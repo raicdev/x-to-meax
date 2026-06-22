@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 
+import { buildPostKey } from "./format.js";
 import { extractStatusId } from "./nitterRssClient.js";
 
 export class NitterHtmlClient {
@@ -56,8 +57,11 @@ export class NitterHtmlClient {
     }
 
     const html = await response.text();
+    validateNitterHtml(html, url);
+    const posts = parseNitterHtml(html, { sourceUrl: url });
+
     return {
-      posts: parseNitterHtml(html, { sourceUrl: url }).sort((a, b) =>
+      posts: posts.sort((a, b) =>
         BigInt(a.id) < BigInt(b.id) ? -1 : 1,
       ),
       cache,
@@ -109,6 +113,17 @@ export function parseNitterHtml(html, { sourceUrl = "https://nitter.net" } = {})
   return posts;
 }
 
+export function validateNitterHtml(html, url) {
+  if (!html.trim()) {
+    throw new Error(`Nitter HTML response was empty for ${url}.`);
+  }
+
+  const $ = cheerio.load(html);
+  if ($(".timeline-item").length === 0 && $(".timeline").length === 0) {
+    throw new Error(`Nitter HTML response did not contain a timeline for ${url}.`);
+  }
+}
+
 function normalizeTimelineItem($, element, sourceUrl) {
   const item = $(element);
   const link = absolutizeUrl(item.children("a.tweet-link").attr("href"), sourceUrl);
@@ -122,15 +137,18 @@ function normalizeTimelineItem($, element, sourceUrl) {
   const pubDate = item.find(".tweet-date a").first().attr("title") || "";
   const isRepost = item.find(".retweet-header").length > 0;
 
-  return {
+  const post = {
     id,
-    key: [id, pubDate, link].filter(Boolean).join("|"),
     title,
     text,
     link,
     pubDate,
     isReply: /^@\w{1,15}\b/.test(text.trim()),
     isRepost,
+  };
+  return {
+    ...post,
+    key: buildPostKey(post),
   };
 }
 

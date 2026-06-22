@@ -9,6 +9,9 @@ test("normalizes username and allows username without numeric user ID", () => {
     process.env.X_USERNAME = "@example";
     process.env.MEAX_BEARER_TOKEN = "meax-token";
     delete process.env.NITTER_SOURCE;
+    delete process.env.NITTER_BASE_URL;
+    delete process.env.NITTER_RSS_URL;
+    delete process.env.NITTER_HTML_URL;
     delete process.env.RSS_USER_AGENT;
     delete process.env.RSS_REQUEST_HEADERS_JSON;
 
@@ -53,6 +56,23 @@ test("can use nitter html source", () => {
 
     assert.equal(config.nitterSource, "html");
     assert.equal(config.nitterHtmlUrl, "https://nitter.net/example");
+  } finally {
+    process.env = original;
+  }
+});
+
+test("dry run does not require meax token", () => {
+  const original = { ...process.env };
+  try {
+    process.env.X_USERNAME = "example";
+    process.env.NITTER_SOURCE = "html";
+    process.env.DRY_RUN = "true";
+    delete process.env.MEAX_BEARER_TOKEN;
+
+    const config = loadConfig();
+
+    assert.equal(config.dryRun, true);
+    assert.equal(config.meaxBearerToken, undefined);
   } finally {
     process.env = original;
   }

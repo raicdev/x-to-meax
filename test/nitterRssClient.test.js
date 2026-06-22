@@ -35,6 +35,10 @@ test("parses nitter rss items", () => {
 
   assert.equal(posts.length, 3);
   assert.equal(posts[0].id, "1870000000000000000");
+  assert.equal(
+    posts[0].key,
+    "https://x.com/example/status/1870000000000000000"
+  );
   assert.equal(posts[0].text, "hello & welcome\nline 2");
   assert.equal(posts[1].id, "1870000000000000001");
   assert.equal(posts[1].isRepost, true);
