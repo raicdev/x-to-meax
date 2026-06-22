@@ -1,19 +1,14 @@
 import { Bridge } from "./bridge.js";
 import { loadConfig } from "./config.js";
 import { MeaxClient } from "./meaxClient.js";
+import { NitterHtmlClient } from "./nitterHtmlClient.js";
 import { NitterRssClient } from "./nitterRssClient.js";
 
 const once = process.argv.includes("--once");
 
 async function main() {
   const config = loadConfig();
-  const feedClient = new NitterRssClient({
-    username: config.xUsername,
-    rssUrl: config.nitterRssUrl,
-    nitterBaseUrl: config.nitterBaseUrl,
-    userAgent: config.rssUserAgent,
-    extraHeaders: config.rssExtraHeaders
-  });
+  const feedClient = buildFeedClient(config);
   const meaxClient = new MeaxClient({
     bearerToken: config.meaxBearerToken,
     postsUrl: config.meaxPostsUrl
@@ -38,6 +33,27 @@ async function main() {
     console.log(`Polling every ${Math.round(config.pollIntervalMs / 1000)} seconds.`);
     setInterval(tick, config.pollIntervalMs);
   }
+}
+
+function buildFeedClient(config) {
+  const baseOptions = {
+    username: config.xUsername,
+    nitterBaseUrl: config.nitterBaseUrl,
+    userAgent: config.rssUserAgent,
+    extraHeaders: config.rssExtraHeaders
+  };
+
+  if (config.nitterSource === "html") {
+    return new NitterHtmlClient({
+      ...baseOptions,
+      htmlUrl: config.nitterHtmlUrl
+    });
+  }
+
+  return new NitterRssClient({
+    ...baseOptions,
+    rssUrl: config.nitterRssUrl
+  });
 }
 
 main().catch((error) => {

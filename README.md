@@ -2,7 +2,7 @@
 
 Xの投稿をMeaxへ自動転送するツールです。
 
-指定したXアカウントのNitter RSSを定期的に見に行き、新しい投稿があればMeaxに投稿します。X APIは使わないので、Xの開発者登録や有料APIトークンは不要です。
+指定したXアカウントのNitterを定期的に見に行き、新しい投稿があればMeaxに投稿します。X APIは使わないので、Xの開発者登録や有料APIトークンは不要です。
 
 ## できること
 
@@ -10,8 +10,8 @@ Xの投稿をMeaxへ自動転送するツールです。
 - repostは本文をコピーせず、元のXポストリンクだけをMeaxに投稿します。
 - replyはデフォルトで転送しません。
 - 初回起動時は、過去投稿をいきなり大量投稿しないように既読として保存します。
-- 2回目以降は、新しく増えたRSS itemだけを転送します。
-- RSS readerらしく `ETag` / `Last-Modified` を保存し、次回アクセス時に差分確認します。
+- 2回目以降は、新しく増えた投稿だけを転送します。
+- `ETag` / `Last-Modified` を保存し、次回アクセス時に差分確認します。
 
 ## 必要なもの
 
@@ -93,8 +93,11 @@ bun run start
 `.env` で変更できます。
 
 ```env
-# 何秒ごとにRSSを確認するか
+# 何秒ごとにNitterを確認するか
 POLL_INTERVAL_SECONDS=300
+
+# Nitterの取得元。rss または html
+NITTER_SOURCE=rss
 
 # 通常投稿にもXのリンクを付ける
 INCLUDE_POST_LINK=false
@@ -130,10 +133,28 @@ NITTER_RSS_URL=https://nitter.net/elonmusk/rss
 
 `NITTER_RSS_URL` を入れた場合は、`X_USERNAME` ではなくそのURLを使います。
 
+RSSの更新が遅い場合は、NitterのプロフィールHTMLを直接スクレイプするモードも使えます。
+
+```env
+NITTER_SOURCE=html
+```
+
+HTML URLを直接指定することもできます。
+
+```env
+NITTER_HTML_URL=https://nitter.net/elonmusk
+```
+
 RSSだけ診断したい場合は、Meaxへ投稿せずに次を実行できます。
 
 ```powershell
 bun run debug:rss
+```
+
+HTMLスクレイプ側を診断したい場合は次を実行します。
+
+```powershell
+bun run debug:html
 ```
 
 PowerShellで一時的にURLを指定して試す例:
@@ -146,19 +167,19 @@ Remove-Item Env:NITTER_RSS_URL
 
 ## 仕組み
 
-このツールは `https://nitter.net/<username>/rss` を定期的に取得します。
+このツールはデフォルトでは `https://nitter.net/<username>/rss` を定期的に取得します。`NITTER_SOURCE=html` の場合は `https://nitter.net/<username>` を取得し、タイムラインHTML内の投稿を検出します。
 
-RSS取得時は次のヘッダーを送ります。
+Nitter取得時は次のヘッダーを送ります。
 
 - `User-Agent`
 - `If-None-Match`
 - `If-Modified-Since`
 
-RSSサーバーから `ETag` や `Last-Modified` が返ってきた場合は、`data/state.json` に保存します。次回取得時に `If-None-Match` / `If-Modified-Since` として送るので、RSSが更新されていなければ `304 Not Modified` として軽く済ませられます。
+Nitterサーバーから `ETag` や `Last-Modified` が返ってきた場合は、`data/state.json` に保存します。次回取得時に `If-None-Match` / `If-Modified-Since` として送るので、更新されていなければ `304 Not Modified` として軽く済ませられます。
 
-RSSにはX APIのような `since_id` がないため、`data/state.json` に既読RSS itemも保存して、同じ投稿を何度もMeaxへ送らないようにしています。
+NitterにはX APIのような `since_id` がないため、`data/state.json` に既読投稿も保存して、同じ投稿を何度もMeaxへ送らないようにしています。
 
-reply判定は、RSS itemの本文が `@someone` のようなメンションから始まるかどうかで見ています。Nitter RSSだけでは完全なreply情報が取れないため、先頭メンションの通常投稿もreply扱いになる可能性があります。
+reply判定は、本文が `@someone` のようなメンションから始まるかどうかで見ています。Nitterだけでは完全なreply情報が取れないため、先頭メンションの通常投稿もreply扱いになる可能性があります。
 
 ## 注意
 

@@ -8,12 +8,14 @@
     "start": "bun src/index.js",
     "once": "bun src/index.js --once",
     "debug:rss": "bun src/debugRss.js",
+    "debug:html": "bun src/debugHtml.js",
     "test": "bun test"
   },
   "engines": {
     "bun": ">=1.3.0"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "fast-xml-parser": "^5.9.3"
   }
 }

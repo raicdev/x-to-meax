@@ -23,10 +23,17 @@ function readInteger(name, defaultValue, { min, max } = {}) {
 
 export function loadConfig() {
   const xUsername = process.env.X_USERNAME?.replace(/^@+/, "");
+  const nitterSource = process.env.NITTER_SOURCE || "rss";
+  if (!["rss", "html"].includes(nitterSource)) {
+    throw new Error("NITTER_SOURCE must be rss or html.");
+  }
+
   const config = {
     xUsername,
+    nitterSource,
     nitterBaseUrl: process.env.NITTER_BASE_URL || "https://nitter.net",
     nitterRssUrl: process.env.NITTER_RSS_URL,
+    nitterHtmlUrl: process.env.NITTER_HTML_URL,
     rssUserAgent: process.env.RSS_USER_AGENT || "x-to-meax/0.1.0",
     rssExtraHeaders: readJsonObject("RSS_REQUEST_HEADERS_JSON", {}),
     meaxBearerToken: process.env.MEAX_BEARER_TOKEN,
@@ -40,8 +47,10 @@ export function loadConfig() {
   };
 
   const missing = [];
-  if (!config.xUsername && !config.nitterRssUrl)
+  if (config.nitterSource === "rss" && !config.xUsername && !config.nitterRssUrl)
     missing.push("X_USERNAME or NITTER_RSS_URL");
+  if (config.nitterSource === "html" && !config.xUsername && !config.nitterHtmlUrl)
+    missing.push("X_USERNAME or NITTER_HTML_URL");
   if (!config.meaxBearerToken) missing.push("MEAX_BEARER_TOKEN");
 
   if (missing.length > 0) {
