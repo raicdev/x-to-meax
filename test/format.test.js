@@ -42,6 +42,28 @@ test("appends quoted post url without quoted text", () => {
   );
 });
 
+test("appends source post url before quoted post url when enabled", () => {
+  assert.equal(
+    formatMeaxContent(
+      {
+        id: "1870000000000000000",
+        text: "my comment",
+        quoted: {
+          id: "1869999999999999999",
+          link: "https://x.com/source/status/1869999999999999999",
+          user: { username: "source" }
+        }
+      },
+      { username: "example", includePostLink: true }
+    ),
+    [
+      "my comment",
+      "https://x.com/example/status/1870000000000000000",
+      "https://x.com/source/status/1869999999999999999"
+    ].join("\n\n")
+  );
+});
+
 test("formats repost as source post link only", () => {
   assert.equal(
     formatMeaxContent(

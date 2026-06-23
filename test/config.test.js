@@ -25,6 +25,39 @@ test("normalizes username and allows username without numeric user ID", () => {
     assert.equal(config.forwardReplies, false);
     assert.equal(config.forwardImages, true);
     assert.equal(config.maxMediaAttachments, 4);
+    assert.equal(config.includePostLink, false);
+  } finally {
+    process.env = original;
+  }
+});
+
+test("can append source X post URLs using the new env name", () => {
+  const original = { ...process.env };
+  try {
+    process.env.X_USERNAME = "example";
+    process.env.MEAX_BEARER_TOKEN = "meax-token";
+    process.env.INCLUDE_X_POST_URL = "true";
+    delete process.env.INCLUDE_POST_LINK;
+
+    const config = loadConfig();
+
+    assert.equal(config.includePostLink, true);
+  } finally {
+    process.env = original;
+  }
+});
+
+test("keeps INCLUDE_POST_LINK as a backwards compatible alias", () => {
+  const original = { ...process.env };
+  try {
+    process.env.X_USERNAME = "example";
+    process.env.MEAX_BEARER_TOKEN = "meax-token";
+    process.env.INCLUDE_POST_LINK = "true";
+    delete process.env.INCLUDE_X_POST_URL;
+
+    const config = loadConfig();
+
+    assert.equal(config.includePostLink, true);
   } finally {
     process.env = original;
   }
