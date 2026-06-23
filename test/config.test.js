@@ -61,6 +61,25 @@ test("can use nitter html source", () => {
   }
 });
 
+test("can use self-host tweets API source", () => {
+  const original = { ...process.env };
+  try {
+    process.env.X_USERNAME = "example";
+    process.env.NITTER_SOURCE = "api";
+    process.env.TWEETS_API_BASE_URL = "http://127.0.0.1:3000";
+    process.env.TWEETS_API_LIMIT = "50";
+    process.env.MEAX_BEARER_TOKEN = "meax-token";
+
+    const config = loadConfig();
+
+    assert.equal(config.nitterSource, "api");
+    assert.equal(config.tweetsApiBaseUrl, "http://127.0.0.1:3000");
+    assert.equal(config.tweetsApiLimit, 50);
+  } finally {
+    process.env = original;
+  }
+});
+
 test("dry run does not require meax token", () => {
   const original = { ...process.env };
   try {
@@ -82,10 +101,10 @@ test("rejects unknown nitter source", () => {
   const original = { ...process.env };
   try {
     process.env.X_USERNAME = "example";
-    process.env.NITTER_SOURCE = "api";
+    process.env.NITTER_SOURCE = "direct";
     process.env.MEAX_BEARER_TOKEN = "meax-token";
 
-    assert.throws(() => loadConfig(), /NITTER_SOURCE must be rss or html/);
+    assert.throws(() => loadConfig(), /NITTER_SOURCE must be rss, html, or api/);
   } finally {
     process.env = original;
   }

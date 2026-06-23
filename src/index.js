@@ -3,6 +3,7 @@ import { loadConfig } from "./config.js";
 import { MeaxClient } from "./meaxClient.js";
 import { NitterHtmlClient } from "./nitterHtmlClient.js";
 import { NitterRssClient } from "./nitterRssClient.js";
+import { TweetsApiClient } from "./tweetsApiClient.js";
 
 const once = process.argv.includes("--once");
 const dryRun = process.argv.includes("--dry-run");
@@ -54,6 +55,18 @@ function buildFeedClient(config) {
     return new NitterHtmlClient({
       ...baseOptions,
       htmlUrl: config.nitterHtmlUrl
+    });
+  }
+
+  if (config.nitterSource === "api") {
+    return new TweetsApiClient({
+      username: config.xUsername,
+      apiBaseUrl: config.tweetsApiBaseUrl,
+      apiUrl: config.tweetsApiUrl,
+      userAgent: config.rssUserAgent,
+      extraHeaders: config.rssExtraHeaders,
+      limit: config.tweetsApiLimit,
+      withReplies: config.forwardReplies
     });
   }
 
