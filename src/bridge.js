@@ -118,11 +118,14 @@ export class Bridge {
 
       if (this.config.dryRun) {
         wouldForward += 1;
-        this.logger.log(`Dry run: would forward X post ${post.id} to Meax.`);
+        this.logger.log(`Dry run: would forward X post ${post.id} to Meax${selectMediaUrls(post, this.config).length ? " with media" : ""}.`);
         continue;
       }
 
-      await this.meaxClient.createPost({ content });
+      await this.meaxClient.createPost({
+        content,
+        mediaUrls: selectMediaUrls(post, this.config)
+      });
       forwarded += 1;
       seenKeys.add(post.key || post.id);
       await saveState(this.config.stateFile, {
@@ -164,6 +167,27 @@ export class Bridge {
       notModified: false
     };
   }
+}
+
+function selectMediaUrls(post, config) {
+  if (!config.forwardImages) {
+    return [];
+  }
+
+  const max = config.maxMediaAttachments ?? 4;
+  const media = Array.isArray(post.media) ? post.media : [];
+  return media
+    .filter((item) => isImageMedia(item))
+    .map((item) => item.url || item.previewUrl)
+    .filter(Boolean)
+    .slice(0, max);
+}
+
+function isImageMedia(item) {
+  if (!item) return false;
+  const type = String(item.type || "").toLowerCase();
+  const url = String(item.url || item.previewUrl || "");
+  return type === "photo" || /\.(png|jpe?g|gif|webp)(?:[?#].*)?$/i.test(url);
 }
 
 function hasSeenPost(post, seenKeys, seenIds) {

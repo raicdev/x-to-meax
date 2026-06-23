@@ -23,6 +23,25 @@ test("appends normal post link when enabled", () => {
   );
 });
 
+test("appends quoted post text and url", () => {
+  assert.equal(
+    formatMeaxContent(
+      {
+        id: "1870000000000000000",
+        text: "my comment",
+        quoted: {
+          id: "1869999999999999999",
+          text: "quoted text",
+          link: "https://x.com/source/status/1869999999999999999",
+          user: { username: "source" }
+        }
+      },
+      { username: "example", includePostLink: false }
+    ),
+    "my comment\n\nquoted text\nhttps://x.com/source/status/1869999999999999999"
+  );
+});
+
 test("formats repost as source post link only", () => {
   assert.equal(
     formatMeaxContent(

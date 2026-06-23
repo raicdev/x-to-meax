@@ -14,6 +14,19 @@ const sampleApiResponse = {
       isReply: true,
       isRepost: false,
       user: { username: "example" },
+      media: [
+        {
+          type: "photo",
+          url: "https://pbs.twimg.com/media/a.jpg",
+          previewUrl: "https://pbs.twimg.com/media/a.jpg",
+        },
+      ],
+      quoted: {
+        id: "1869999999999999998",
+        text: "quoted text",
+        url: "https://x.com/quoted/status/1869999999999999998",
+        user: { username: "quoted" },
+      },
     },
     {
       id: "1870000000000000001",
@@ -80,6 +93,15 @@ test("fetches API tweets and normalizes them to bridge posts", async () => {
   assert.equal(feed.posts[0].isRepost, true);
   assert.equal(feed.posts[0].link, "https://x.com/source/status/1869999999999999999");
   assert.equal(feed.posts[1].isReply, true);
+  assert.deepEqual(feed.posts[1].media, [
+    {
+      type: "photo",
+      url: "https://pbs.twimg.com/media/a.jpg",
+      previewUrl: "https://pbs.twimg.com/media/a.jpg",
+      videoUrl: "",
+    },
+  ]);
+  assert.equal(feed.posts[1].quoted.link, "https://x.com/quoted/status/1869999999999999998");
 });
 
 test("parses API tweets with stable x.com post keys", () => {

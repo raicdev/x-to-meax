@@ -106,11 +106,36 @@ function normalizeTweet(tweet) {
     pubDate: String(tweet.pubDate || ""),
     isReply: Boolean(tweet.isReply),
     isRepost: Boolean(tweet.isRepost),
+    isQuote: Boolean(tweet.isQuote),
+    media: normalizeMedia(tweet.media),
+    quoted: normalizeNestedPost(tweet.quoted),
   };
 
   return {
     ...post,
     key: buildPostKey(post, tweet.user?.username),
+  };
+}
+
+function normalizeMedia(media) {
+  if (!Array.isArray(media)) return [];
+  return media
+    .map((item) => ({
+      type: String(item?.type || ""),
+      url: String(item?.url || item?.previewUrl || ""),
+      previewUrl: String(item?.previewUrl || item?.url || ""),
+      videoUrl: String(item?.videoUrl || ""),
+    }))
+    .filter((item) => item.url || item.videoUrl);
+}
+
+function normalizeNestedPost(post) {
+  if (!post?.id && !post?.url) return null;
+  return {
+    id: String(post.id || ""),
+    text: String(post.text || "").trim(),
+    link: String(post.url || ""),
+    user: post.user || null,
   };
 }
 

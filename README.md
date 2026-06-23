@@ -260,6 +260,20 @@ TWEETS_API_LIMIT=100
 
 `FORWARD_REPLIES=true` の場合、転送側はAPIへ `with_replies=true` を付けて「Posts & replies」相当を取得します。replyを実際にMeaxへ流すかどうかは、既存どおり `FORWARD_REPLIES` で制御します。
 
+API取得元の投稿に画像が含まれる場合は、デフォルトでMeaxの `media` field に添付します。不要な場合は無効にできます。
+
+```env
+FORWARD_IMAGES=false
+```
+
+添付する画像数の上限も変更できます。
+
+```env
+MAX_MEDIA_ATTACHMENTS=4
+```
+
+quote postの場合は、本文の末尾にquote元のテキストとX URLを追記します。
+
 PowerShellで一時的にURLを指定して試す例:
 
 ```powershell

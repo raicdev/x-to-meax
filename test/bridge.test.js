@@ -243,6 +243,44 @@ test("can forward replies when enabled", async () => {
   }
 });
 
+test("passes image media urls to Meax when forwarding", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "x-to-meax-"));
+  try {
+    const posted = [];
+    const bridge = new Bridge({
+      feedClient: {
+        getRecentPosts: async () => [
+          {
+            id: "1870000000000000000",
+            key: "1870000000000000000|date",
+            text: "photo",
+            media: [
+              { type: "photo", url: "https://pbs.twimg.com/media/a.jpg" },
+              { type: "video", url: "https://video.twimg.com/a.mp4" }
+            ]
+          }
+        ]
+      },
+      meaxClient: {
+        createPost: async (post) => posted.push(post)
+      },
+      config: {
+        stateFile: join(dir, "state.json"),
+        backfillOnStart: true,
+        includePostLink: false,
+        forwardImages: true,
+        maxMediaAttachments: 4
+      },
+      logger: silentLogger
+    });
+
+    assert.equal((await bridge.runOnce()).forwarded, 1);
+    assert.deepEqual(posted[0].mediaUrls, ["https://pbs.twimg.com/media/a.jpg"]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("passes feed cache headers and stores updated feed cache", async () => {
   const dir = await mkdtemp(join(tmpdir(), "x-to-meax-"));
   try {

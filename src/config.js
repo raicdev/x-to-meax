@@ -44,6 +44,8 @@ export function loadConfig() {
     pollIntervalMs:
       readInteger("POLL_INTERVAL_SECONDS", 300, { min: 30 }) * 1000,
     forwardReplies: readBoolean("FORWARD_REPLIES", false),
+    forwardImages: readBoolean("FORWARD_IMAGES", true),
+    maxMediaAttachments: readInteger("MAX_MEDIA_ATTACHMENTS", 4, { min: 0, max: 10 }),
     includePostLink: readBoolean("INCLUDE_POST_LINK", false),
     backfillOnStart: readBoolean("BACKFILL_ON_START", false),
     dryRun: readBoolean("DRY_RUN", false),

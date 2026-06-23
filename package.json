@@ -11,6 +11,7 @@
     "dry-run": "bun src/index.js --once --dry-run",
     "debug:rss": "bun src/debugRss.js",
     "debug:html": "bun src/debugHtml.js",
+    "update-env": "bun scripts/updateEnv.js",
     "test": "bun test"
   },
   "engines": {

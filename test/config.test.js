@@ -23,6 +23,8 @@ test("normalizes username and allows username without numeric user ID", () => {
     assert.equal(config.rssUserAgent, "x-to-meax/0.1.0");
     assert.deepEqual(config.rssExtraHeaders, {});
     assert.equal(config.forwardReplies, false);
+    assert.equal(config.forwardImages, true);
+    assert.equal(config.maxMediaAttachments, 4);
   } finally {
     process.env = original;
   }
@@ -75,6 +77,23 @@ test("can use self-host tweets API source", () => {
     assert.equal(config.nitterSource, "api");
     assert.equal(config.tweetsApiBaseUrl, "http://127.0.0.1:3000");
     assert.equal(config.tweetsApiLimit, 50);
+  } finally {
+    process.env = original;
+  }
+});
+
+test("can disable image forwarding", () => {
+  const original = { ...process.env };
+  try {
+    process.env.X_USERNAME = "example";
+    process.env.MEAX_BEARER_TOKEN = "meax-token";
+    process.env.FORWARD_IMAGES = "false";
+    process.env.MAX_MEDIA_ATTACHMENTS = "2";
+
+    const config = loadConfig();
+
+    assert.equal(config.forwardImages, false);
+    assert.equal(config.maxMediaAttachments, 2);
   } finally {
     process.env = original;
   }
