@@ -32,15 +32,17 @@ function buildClient() {
 async function main() {
   const client = buildClient();
   const url = client.buildHtmlUrl();
+  const requestUrl = client.buildRequestUrl(url);
   const headers = client.buildHeaders();
 
   console.log(`HTML URL: ${url}`);
+  console.log(`Request URL: ${requestUrl}`);
   console.log("Request headers:");
   for (const [name, value] of Object.entries(headers)) {
     console.log(`  ${name}: ${value}`);
   }
 
-  const response = await fetch(url, { headers });
+  const response = await fetch(requestUrl, { headers });
   const body = await response.text();
   validateNitterHtml(body, url);
   const directPosts = parseNitterHtml(body, { sourceUrl: url });

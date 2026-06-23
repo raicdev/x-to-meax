@@ -29,8 +29,9 @@ export class NitterHtmlClient {
 
   async getRecentFeed({ etag, lastModified, cacheUrl } = {}) {
     const url = this.buildHtmlUrl();
+    const requestUrl = this.buildRequestUrl(url);
     const useCache = !cacheUrl || cacheUrl === url;
-    const response = await this.fetch(url, {
+    const response = await this.fetch(requestUrl, {
       headers: this.buildHeaders({
         etag: useCache ? etag : null,
         lastModified: useCache ? lastModified : null,
@@ -73,6 +74,9 @@ export class NitterHtmlClient {
   buildHeaders({ etag, lastModified } = {}) {
     const headers = {
       "user-agent": this.userAgent,
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "cache-control": "no-cache",
+      pragma: "no-cache",
     };
 
     if (etag) {
@@ -97,6 +101,16 @@ export class NitterHtmlClient {
     }
     return `${this.nitterBaseUrl.replace(/\/+$/, "")}/${encodeURIComponent(this.username)}`;
   }
+
+  buildRequestUrl(url = this.buildHtmlUrl()) {
+    return buildCacheBustedUrl(url);
+  }
+}
+
+function buildCacheBustedUrl(value) {
+  const url = new URL(value);
+  url.searchParams.set("_x_to_meax", String(Date.now()));
+  return url.toString();
 }
 
 export function parseNitterHtml(html, { sourceUrl = "https://nitter.net" } = {}) {

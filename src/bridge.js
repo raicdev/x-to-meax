@@ -71,7 +71,7 @@ export class Bridge {
         feed: feedCache,
         initialized: true
       });
-      this.logger.log("No new Nitter posts.");
+      this.logger.log(`No new Nitter posts. newest=${newestId} seen=${posts.length}.`);
       return { forwarded: 0, seen: posts.length };
     }
 

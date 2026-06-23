@@ -87,10 +87,12 @@ test("fetches and sorts html posts oldest to newest", async () => {
 
 test("sends html headers and conditional request headers", async () => {
   let requestHeaders;
+  let requestUrl;
   const client = new NitterHtmlClient({
     htmlUrl: "https://nitter.net/example",
     userAgent: "CustomHtmlReader/1.0",
-    fetchImpl: async (_url, init) => {
+    fetchImpl: async (url, init) => {
+      requestUrl = String(url);
       requestHeaders = init.headers;
       return {
         ok: true,
@@ -108,9 +110,14 @@ test("sends html headers and conditional request headers", async () => {
     lastModified: "Sun, 21 Jun 2026 08:00:00 GMT"
   });
 
+  assert.match(requestUrl, /^https:\/\/nitter\.net\/example\?_x_to_meax=\d+$/);
   assert.equal(requestHeaders["user-agent"], "CustomHtmlReader/1.0");
+  assert.equal(requestHeaders.accept, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+  assert.equal(requestHeaders["cache-control"], "no-cache");
+  assert.equal(requestHeaders.pragma, "no-cache");
   assert.equal(requestHeaders["if-none-match"], "\"old\"");
   assert.equal(requestHeaders["if-modified-since"], "Sun, 21 Jun 2026 08:00:00 GMT");
+  assert.equal(feed.cache.url, "https://nitter.net/example");
   assert.equal(feed.cache.etag, "\"abc\"");
   assert.equal(feed.cache.lastModified, "Mon, 22 Jun 2026 08:00:00 GMT");
 });
