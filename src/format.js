@@ -35,12 +35,7 @@ export function buildPostKey(post, username) {
 
 function formatQuote(quoted) {
   if (!quoted?.id && !quoted?.link) return "";
-  const quoteLink = getPostLink(quoted, quoted.user?.username);
-  const quoteText = (quoted.text || "").trim();
-  if (!quoteText) {
-    return quoteLink;
-  }
-  return `${quoteText}\n${quoteLink}`;
+  return getPostLink(quoted, quoted.user?.username);
 }
 
 export function convertNitterLinkToXLink(link) {

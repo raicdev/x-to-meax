@@ -272,7 +272,7 @@ FORWARD_IMAGES=false
 MAX_MEDIA_ATTACHMENTS=4
 ```
 
-quote postの場合は、本文の末尾にquote元のテキストとX URLを追記します。
+quote postの場合は、本文の末尾にquote元のX URLだけを追記します。
 
 PowerShellで一時的にURLを指定して試す例:
 

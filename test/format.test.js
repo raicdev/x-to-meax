@@ -23,7 +23,7 @@ test("appends normal post link when enabled", () => {
   );
 });
 
-test("appends quoted post text and url", () => {
+test("appends quoted post url without quoted text", () => {
   assert.equal(
     formatMeaxContent(
       {
@@ -38,7 +38,7 @@ test("appends quoted post text and url", () => {
       },
       { username: "example", includePostLink: false }
     ),
-    "my comment\n\nquoted text\nhttps://x.com/source/status/1869999999999999999"
+    "my comment\n\nhttps://x.com/source/status/1869999999999999999"
   );
 });
 
